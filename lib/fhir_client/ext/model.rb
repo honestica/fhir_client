@@ -61,6 +61,10 @@ module FHIR
       handle_response client.conditional_create(model, params)
     end
 
+    def self.base_create(resource, options, format)
+      handle_response client.base_create(self, options, format)
+    end
+
     def self.partial_update(id, patchset, options = {})
       handle_response client.partial_update(self, id, patchset, options = {})
     end
