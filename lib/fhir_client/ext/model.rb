@@ -19,8 +19,8 @@ module FHIR
         self.class.vread(id, version_id, client)
       end
 
-      def create
-        handle_response client.create(self)
+      def create(option = {})
+        handle_response client.create(self, options)
       end
 
       def conditional_create(params)
