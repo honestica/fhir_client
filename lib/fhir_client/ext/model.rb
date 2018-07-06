@@ -19,7 +19,7 @@ module FHIR
         self.class.vread(id, version_id, client)
       end
 
-      def create(option = {})
+      def create(options = {})
         handle_response client.create(self, options)
       end
 
