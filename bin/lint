@@ -1,0 +1,21 @@
+#!/bin/bash
+# Runs rubocop:
+# - against all files if Gemfile.lock has been touched
+# - otherwise, against changed files only
+
+set -e
+set -u
+
+cd "$( dirname "$0" )/.."
+
+COMMIT=$(git merge-base HEAD origin/master)
+FILES_DIFF=$(git diff-tree -r --no-commit-id --name-status $COMMIT..HEAD)
+
+if (echo "$FILES_DIFF" | grep -q 'Gemfile.lock'); then
+  bundle exec rubocop --config .rubocop.yml --force-exclusion
+else
+  echo "$FILES_DIFF" \
+    | grep -E 'A|M' \
+    | awk '{print $2}' \
+    | xargs -r bundle exec rubocop --config .rubocop.yml --force-exclusion
+fi
