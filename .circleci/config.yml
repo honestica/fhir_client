@@ -1,0 +1,93 @@
+orbs:
+  ruby: circleci/ruby@2
+
+defaults: &defaults
+  working_directory: ~/fhir_client
+  docker:
+    - image: cimg/ruby:3.3
+
+install_deps_config: &install_deps_config
+  app-dir: ~/fhir_client
+  include-branch-in-cache-key: false
+  pre-install-steps:
+    - run: bundle lock --add-platform x86_64-linux # make sure bundling cache does not depend on the platform
+
+jobs:
+  test:
+    parameters:
+      ruby-version:
+        type: string
+    docker:
+      - image: cimg/ruby:<< parameters.ruby-version >>
+    working_directory: ~/gem-<< parameters.ruby-version >>
+    steps:
+      - checkout
+      - ruby/install-deps: # use the ruby orb to install dependencies
+          <<: *install_deps_config
+          app-dir: ~/gem-<< parameters.ruby-version >>
+      - run: bundle exec rspec --color --format RspecJunitFormatter --out ~/rspec/rspec.xml --format progress spec/
+      - store_test_results:
+          path: ~/rspec
+      - store_artifacts:
+          path: coverage
+
+  build:
+    <<: *defaults
+    steps:
+      - checkout
+      - ruby/install-deps: # use the ruby orb to install dependencies
+          <<: *install_deps_config
+      - run: bundle exec rake build
+      - persist_to_workspace:
+          root: ~/fhir_client
+          paths:
+            - .
+
+  linting:
+    <<: *defaults
+    steps:
+      - checkout
+      - ruby/install-deps: # use the ruby orb to install dependencies
+          <<: *install_deps_config
+      - run: bin/lint
+
+  publish:
+    <<: *defaults
+    steps:
+      - attach_workspace:
+          at: ~/fhir_client
+      - run: curl -F package=@$(ls -d -1 pkg/*.gem) https://$GEMFURY_TOKEN@push.fury.io/lifen
+
+workflows:
+  build_and_test:
+    jobs:
+      - test:
+          matrix:
+            parameters:
+              ruby-version: ["3.3"]
+      - linting:
+          filters:
+            branches:
+              ignore:
+                - master
+      - build:
+          requires:
+            - test
+          filters:
+            branches:
+              only:
+                - master
+      - hold-publish:
+          type: approval
+          filters:
+            branches:
+              only:
+                - master
+      - publish:
+          requires:
+            - build
+            - hold-publish
+          filters:
+            branches:
+              only:
+                - master
