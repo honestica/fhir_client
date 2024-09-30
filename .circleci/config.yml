@@ -27,11 +27,7 @@ jobs:
       - ruby/install-deps: # use the ruby orb to install dependencies
           <<: *install_deps_config
           app-dir: ~/gem-<< parameters.ruby-version >>
-      - run: bundle exec rspec --color --format RspecJunitFormatter --out ~/rspec/rspec.xml --format progress spec/
-      - store_test_results:
-          path: ~/rspec
-      - store_artifacts:
-          path: coverage
+      - run: bundle exec rake
 
   build:
     <<: *defaults
