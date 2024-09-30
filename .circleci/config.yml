@@ -28,6 +28,8 @@ jobs:
           <<: *install_deps_config
           app-dir: ~/gem-<< parameters.ruby-version >>
       - run: bundle exec rake
+      - store_artifacts:
+          path: coverage
 
   build:
     <<: *defaults
